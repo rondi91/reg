@@ -2,63 +2,69 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<title>Realtime Wireless Monitor</title>
+<title>Real-Time Wireless Signal Monitor</title>
 <style>
-body { font-family: Arial, sans-serif; background:#f8f9fa; padding:20px; }
-h2 { color:#333; }
-table { width:100%; border-collapse: collapse; margin-top:10px; background:white; }
-th, td { border:1px solid #ddd; padding:8px; text-align:center; }
-th { background:#007bff; color:white; }
-tbody tr:nth-child(even){background:#f2f2f2;}
+body { font-family: Arial, sans-serif; background: #f6f8fa; margin: 20px; }
+h2 { background: #007bff; color: white; padding: 10px; border-radius: 5px; }
+table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+th, td { padding: 8px 10px; border: 1px solid #ddd; text-align: left; }
+th { background: #f0f0f0; }
+.signal-good { color: green; font-weight: bold; }
+.signal-weak { color: orange; font-weight: bold; }
+.signal-bad { color: red; font-weight: bold; }
 </style>
 </head>
 <body>
-<h2>Realtime Wireless Signal & CCQ Monitor</h2>
-<table id="wifi-table">
-  <thead>
-    <tr>
-      <th>Router</th>
-      <th>MAC</th>
-      <th>Interface</th>
-      <th>Signal (dBm)</th>
-      <th>TX CCQ (%)</th>
-      <th>RX CCQ (%)</th>
-    </tr>
-  </thead>
-  <tbody><tr><td colspan="6">Loading data...</td></tr></tbody>
-</table>
+<h1>📡 Real-Time Wireless Signal Monitor</h1>
+<div id="content">Loading data...</div>
 
 <script>
-async function loadRealtime() {
-  try {
+async function loadData() {
     const res = await fetch('api.php');
     const data = await res.json();
-    const tbody = document.querySelector('#wifi-table tbody');
-    tbody.innerHTML = '';
-    if (!data.length) {
-      tbody.innerHTML = '<tr><td colspan="6">Tidak ada data wireless</td></tr>';
-      return;
-    }
-    data.forEach(d => {
-      tbody.innerHTML += `
-        <tr>
-          <td>${d.router}</td>
-          <td>${d.mac}</td>
-          <td>${d.iface}</td>
-          <td>${d.signal}</td>
-          <td>${d.tx_ccq}</td>
-          <td>${d.rx_ccq}</td>
-        </tr>
-      `;
+    let html = '';
+
+    data.forEach(router => {
+        html += `<h2>${router.router} (${router.host})</h2>`;
+
+        if (router.error) {
+            html += `<p style="color:red;">Error: ${router.error}</p>`;
+            return;
+        }
+
+        if (!router.wireless.length) {
+            html += `<p>Tidak ada data wireless.</p>`;
+            return;
+        }
+
+        html += `<table>
+            <tr><th>Interface</th><th>MAC Address</th><th>Signal (dBm)</th><th>TX CCQ (%)</th><th>RX CCQ (%)</th><th>Uptime</th></tr>`;
+
+        router.wireless.forEach(w => {
+            let sClass = 'signal-good';
+            let signalVal = parseInt(w.signal);
+            if (signalVal < -70) sClass = 'signal-bad';
+            else if (signalVal < -60) sClass = 'signal-weak';
+
+            html += `<tr>
+                <td>${w.interface}</td>
+                <td>${w.mac}</td>
+                <td class="${sClass}">${w.signal}</td>
+                <td>${w.tx_ccq}</td>
+                <td>${w.rx_ccq}</td>
+                <td>${w.uptime}</td>
+            </tr>`;
+        });
+
+        html += `</table>`;
     });
-  } catch (err) {
-    console.error('Fetch error:', err);
-  }
+
+    document.getElementById('content').innerHTML = html;
 }
 
-// refresh tiap 5 detik
-loadRealtime();
-setInterval(loadRealtime, 5000);
+// Refresh tiap 3 detik
+loadData();
+setInterval(loadData, 3000);
 </script>
 </body>
 </html>

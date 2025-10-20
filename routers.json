@@ -1,16 +1,37 @@
 [
-  {
-    "name": "Router Kantor",
-    "host": "172.16.30.8",
-    "port": 8728,
-    "user": "rondi",
-    "pass": "21184662"
-  },
-  {
-    "name": "Router Rumah",
-    "host": "192.168.20.1",
-    "port": 8728,
-    "user": "admin",
-    "pass": "password"
-  }
+    {
+        "name": "AP MUNIB 2",
+        "host": "172.16.40.14",
+        "user": "rondi",
+        "password": "21184662",
+        "port": 8728
+    },
+    {
+        "name": "ap_atik@ap",
+        "host": "172.16.40.17",
+        "user": "rondi",
+        "password": "21184662",
+        "port": 8728
+    },
+    {
+        "name": "apkl1@kauman",
+        "host": "172.16.40.24",
+        "user": "rondi",
+        "password": "21184662",
+        "port": 8728
+    },
+    {
+        "name": "APTR_TO_KAUMAN@ALAT",
+        "host": "172.16.40.22",
+        "user": "admin",
+        "password": "",
+        "port": 8728
+    },
+    {
+        "name": "ap_swh@AP",
+        "host": "172.16.40.27",
+        "user": "rondi",
+        "password": "21184662",
+        "port": 8728
+    }
 ]
