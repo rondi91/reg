@@ -14,13 +14,22 @@ if (isset($_POST['ajax']) && $_POST['ajax'] === '1') {
         'port' => intval($_POST['port'] ?? 8728)
     ];
 
-    if (!empty($newRouter['host'])) {
-        $routers[] = $newRouter;
-        file_put_contents($routersFile, json_encode($routers, JSON_PRETTY_PRINT));
-        echo json_encode(['success' => true]);
-    } else {
+    if (empty($newRouter['host'])) {
         echo json_encode(['success' => false, 'error' => 'Host kosong']);
+        exit;
     }
+
+    // --- Cek duplikat berdasarkan host/IP ---
+    $existing = array_filter($routers, fn($r) => $r['host'] === $newRouter['host']);
+    if (!empty($existing)) {
+        echo json_encode(['success' => false, 'error' => 'Router sudah ada']);
+        exit;
+    }
+
+    // --- Simpan router baru ---
+    $routers[] = $newRouter;
+    file_put_contents($routersFile, json_encode($routers, JSON_PRETTY_PRINT));
+    echo json_encode(['success' => true]);
     exit;
 }
 ?>
@@ -60,6 +69,9 @@ button:hover { background: #1e40af; }
   background: #dcfce7; color: #166534; padding: 8px;
   border-radius: 6px; display: none; margin-bottom: 10px;
 }
+#notif.error {
+  background: #fee2e2; color: #991b1b;
+}
 </style>
 </head>
 <body>
@@ -90,9 +102,10 @@ button:hover { background: #1e40af; }
 </div>
 
 <script>
-function showNotif(msg) {
+function showNotif(msg, isError = false) {
   const notif = document.getElementById('notif');
   notif.innerText = msg;
+  notif.className = isError ? 'error' : '';
   notif.style.display = 'block';
   setTimeout(() => notif.style.display = 'none', 3000);
 }
@@ -102,8 +115,8 @@ function saveRouter(name, host) {
   data.append('ajax', '1');
   data.append('name', name || 'Router ' + host);
   data.append('host', host);
-  data.append('user', 'rondi');
-  data.append('password', '21184662');
+  data.append('user', 'admin');
+  data.append('password', '');
   data.append('port', 8728);
 
   fetch('add_router.php', { method: 'POST', body: data })
@@ -111,11 +124,13 @@ function saveRouter(name, host) {
     .then(res => {
       if (res.success) {
         showNotif('✅ Router ' + host + ' berhasil disimpan!');
+      } else if (res.error === 'Router sudah ada') {
+        showNotif('⚠️ Router ' + host + ' sudah terdaftar.', true);
       } else {
-        showNotif('❌ Gagal menyimpan router: ' + (res.error || ''));
+        showNotif('❌ Gagal menyimpan router: ' + (res.error || 'Unknown error'), true);
       }
     })
-    .catch(err => showNotif('❌ Error: ' + err));
+    .catch(err => showNotif('❌ Error: ' + err, true));
 }
 
 function selectIP(ip, name) {

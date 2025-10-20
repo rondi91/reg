@@ -67,6 +67,7 @@ foreach ($routers as $srv) {
                     <td>{$uptime}</td>
                     <td><a href='#' class='btn-select' onclick=\"selectIP('{$ip}', '{$name}')\">Pilih</a></td>
 
+
                  </tr>";
             $i++;
         }
