@@ -11,15 +11,15 @@ if (isset($_GET['delete'])) {
     $index = intval($_GET['delete']);
     if (isset($routers[$index])) {
         unset($routers[$index]);
-        $routers = array_values($routers); // rapikan index array
+        $routers = array_values($routers);
         file_put_contents($routersFile, json_encode($routers, JSON_PRETTY_PRINT));
         header("Location: index.php?deleted=1");
         exit;
     }
 }
 
-// === FUNGSI AMBIL DATA ROUTER ===
-function getWirelessInfo($router)
+// === AMBIL DATA WIRELESS REGISTRATION ===
+function getWirelessRegistration($router)
 {
     try {
         $client = new Client([
@@ -27,7 +27,7 @@ function getWirelessInfo($router)
             'user' => $router['user'],
             'pass' => $router['password'],
             'port' => $router['port'] ?? 8728,
-            'timeout' => 2,
+            'timeout' => 3,
         ]);
 
         $query = new Query('/interface/wireless/registration-table/print');
@@ -42,7 +42,7 @@ function getWirelessInfo($router)
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<title>Dashboard Wireless Monitor</title>
+<title>Wireless Registration Monitor</title>
 <style>
 body {
     font-family: Arial, sans-serif;
@@ -57,32 +57,23 @@ h2 { margin-bottom: 10px; }
     border-radius: 10px;
     overflow: hidden;
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
 }
 .table th, .table td {
-    padding: 10px;
+    padding: 8px;
     border-bottom: 1px solid #e5e7eb;
     text-align: left;
 }
-.table th {
-    background: #f1f5f9;
-    font-weight: bold;
-}
-.table tr:hover {
-    background: #f9fafb;
-}
-.actions {
-    display: flex;
-    gap: 8px;
-}
+.table th { background: #f1f5f9; font-weight: bold; }
+.table tr:hover { background: #f9fafb; }
 .btn {
     text-decoration: none;
-    padding: 5px 10px;
-    border-radius: 5px;
+    padding: 6px 10px;
+    border-radius: 6px;
     font-size: 13px;
 }
 .btn-add { background: #2563eb; color: #fff; }
 .btn-del { background: #dc2626; color: #fff; }
-.btn-del:hover { background: #b91c1c; }
 .notice {
     background: #d1fae5;
     color: #065f46;
@@ -96,11 +87,14 @@ h2 { margin-bottom: 10px; }
     padding: 10px;
     border-radius: 6px;
 }
+.router-block {
+    margin-bottom: 25px;
+}
 </style>
 </head>
 <body>
 
-<h2>📡 Dashboard Wireless Router</h2>
+<h2>📡 Wireless Registration Monitor</h2>
 
 <?php if (isset($_GET['deleted'])): ?>
 <div class="notice">Router berhasil dihapus.</div>
@@ -111,35 +105,60 @@ h2 { margin-bottom: 10px; }
 </p>
 
 <?php if (empty($routers)): ?>
-<p><em>Belum ada router terdaftar. Tambahkan lewat menu di atas.</em></p>
+<p><em>Belum ada router terdaftar.</em></p>
 <?php else: ?>
-<table class="table">
-    <tr>
-        <th>No</th>
-        <th>Nama Router</th>
-        <th>Host</th>
-        <th>Status</th>
-        <th>Aksi</th>
-    </tr>
     <?php foreach ($routers as $i => $r): ?>
-        <?php
-        $status = getWirelessInfo($r);
-        $statusText = isset($status[0]['error'])
-            ? "<span class='error'>Error: " . htmlspecialchars($status[0]['error']) . "</span>"
-            : count($status) . " client(s) terhubung";
-        ?>
-        <tr>
-            <td><?= $i + 1 ?></td>
-            <td><?= htmlspecialchars($r['name']) ?></td>
-            <td><?= htmlspecialchars($r['host']) ?></td>
-            <td><?= $statusText ?></td>
-            <td class="actions">
+        <div class="router-block">
+            <h3>🔹 <?= htmlspecialchars($r['name']) ?> (<?= htmlspecialchars($r['host']) ?>)
                 <a href="?delete=<?= $i ?>" class="btn btn-del" onclick="return confirm('Yakin hapus router ini?')">Hapus</a>
-            </td>
-        </tr>
+            </h3>
+
+            <?php $regs = getWirelessRegistration($r); ?>
+
+            <?php if (isset($regs[0]['error'])): ?>
+                <div class="error">Error: <?= htmlspecialchars($regs[0]['error']) ?></div>
+            <?php elseif (empty($regs)): ?>
+                <div class="error">Tidak ada data wireless terdeteksi.</div>
+            <?php else: ?>
+                <table class="table">
+                    <tr>
+                        <th>No</th>
+                        <th>MAC Address</th>
+                        <th>Interface</th>
+                        <th>Uptime</th>
+                        <th>Signal</th>
+                        <th>TX CCQ</th>
+                        <th>RX CCQ</th>
+                        <th>TX Rate</th>
+                        <th>RX Rate</th>
+                        <th>Last IP</th>
+                    </tr>
+                    <?php foreach ($regs as $n => $w): ?>
+                    <tr>
+                        <td><?= $n + 1 ?></td>
+                        <td><?= $w['mac-address'] ?? '-' ?></td>
+                        <td><?= $w['interface'] ?? '-' ?></td>
+                        <td><?= $w['uptime'] ?? '-' ?></td>
+                        <td><?= $w['signal-strength'] ?? '-' ?></td>
+                        <td><?= $w['tx-ccq'] ?? '-' ?></td>
+                        <td><?= $w['rx-ccq'] ?? '-' ?></td>
+                        <td><?= $w['tx-rate'] ?? '-' ?></td>
+                        <td><?= $w['rx-rate'] ?? '-' ?></td>
+                        <td><?= $w['last-ip'] ?? '-' ?></td>
+                    </tr>
+                    <?php endforeach; ?>
+                </table>
+            <?php endif; ?>
+        </div>
     <?php endforeach; ?>
-</table>
 <?php endif; ?>
+
+<script>
+// Auto-refresh setiap 10 detik agar data real-time
+setTimeout(() => {
+    location.reload();
+}, 10000);
+</script>
 
 </body>
 </html>
