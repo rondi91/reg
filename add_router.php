@@ -1,64 +1,8 @@
 <?php
 require 'vendor/autoload.php';
-use RouterOS\Client;
-use RouterOS\Query;
 
 $routersFile = 'routers.json';
 $routers = file_exists($routersFile) ? json_decode(file_get_contents($routersFile), true) : [];
-
-// --- Router PPPoE sumber IP ---
-$pppoeRouters = [
-    ['name' => 'Router Server 1', 'host' => '192.168.255.20', 'user' => 'rondi', 'password' => '21184662', 'port' => 8728],
-    ['name' => 'Router Server 2', 'host' => '192.168.255.26', 'user' => 'rondi', 'password' => '21184662', 'port' => 8728]
-];
-
-// --- Simpan router baru ---
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $newRouter = [
-        'name' => $_POST['name'] ?? 'Router Baru',
-        'host' => $_POST['host'] ?? '',
-        'user' => $_POST['user'] ?? 'admin',
-        'password' => $_POST['password'] ?? '',
-        'port' => intval($_POST['port'] ?? 8728),
-    ];
-
-    if (!empty($newRouter['host'])) {
-        $routers[] = $newRouter;
-        file_put_contents($routersFile, json_encode($routers, JSON_PRETTY_PRINT));
-        header("Location: index.php?added=1");
-        exit;
-    }
-}
-
-// --- Ambil daftar IP aktif dari PPPoE servers ---
-function getPPPActive($router)
-{
-    try {
-        $client = new Client([
-            'host' => $router['host'],
-            'user' => $router['user'],
-            'pass' => $router['password'],
-            'port' => $router['port'] ?? 8728,
-            'timeout' => 3,
-        ]);
-
-        $query = new Query('/ppp/active/print');
-        $data = $client->query($query)->read();
-
-        $list = [];
-        foreach ($data as $d) {
-            $list[] = [
-                'name' => $d['name'] ?? '-',
-                'address' => $d['address'] ?? '-',
-                'uptime' => $d['uptime'] ?? '-',
-                'service' => $d['service'] ?? '-'
-            ];
-        }
-        return $list;
-    } catch (Exception $e) {
-        return [['error' => $e->getMessage()]];
-    }
-}
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -66,141 +10,84 @@ function getPPPActive($router)
 <meta charset="UTF-8">
 <title>Tambah Router AP</title>
 <style>
-body {
-    font-family: Arial, sans-serif;
-    background: #f8fafc;
-    margin: 20px;
-}
+body { font-family: Arial, sans-serif; background: #f8fafc; margin: 20px; }
 h2 { margin-bottom: 10px; }
 form {
-    background: #fff;
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-    width: 400px;
+  background: #fff; padding: 20px; border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1); width: 400px;
 }
-input[type=text], input[type=password], input[type=number] {
-    width: 100%;
-    padding: 8px;
-    margin: 6px 0 10px 0;
-    border: 1px solid #d1d5db;
-    border-radius: 6px;
+input, button {
+  padding: 8px; margin: 6px 0; border-radius: 6px;
+  border: 1px solid #d1d5db; width: 100%;
 }
 button {
-    background: #2563eb;
-    color: white;
-    padding: 8px 12px;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
+  background: #2563eb; color: white; cursor: pointer; border: none;
 }
 button:hover { background: #1e40af; }
 .table {
-    border-collapse: collapse;
-    width: 100%;
-    background: #fff;
-    border-radius: 10px;
-    overflow: hidden;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    margin-top: 10px;
+  border-collapse: collapse; width: 100%; background: #fff;
+  border-radius: 8px; overflow: hidden; margin-top: 10px;
 }
-.table th, .table td {
-    padding: 8px;
-    border-bottom: 1px solid #e5e7eb;
-    text-align: left;
-}
-.table th { background: #f1f5f9; font-weight: bold; }
+.table th, .table td { padding: 6px; border-bottom: 1px solid #e5e7eb; }
+.table th { background: #f1f5f9; text-align: left; }
 .btn-select {
-    background: #16a34a;
-    color: white;
-    padding: 5px 10px;
-    border-radius: 6px;
-    text-decoration: none;
-    font-size: 13px;
+  background: #16a34a; color: #fff; padding: 5px 10px;
+  border-radius: 6px; text-decoration: none;
 }
 .btn-select:hover { background: #15803d; }
-.search-box {
-    margin: 10px 0;
-}
-.search-input {
-    width: 250px;
-    padding: 6px 10px;
-    border: 1px solid #d1d5db;
-    border-radius: 6px;
-}
+#results { margin-top: 20px; }
 </style>
-<script>
-function selectIP(ip) {
-    document.getElementById('host').value = ip;
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-function filterTable(inputId, tableId) {
-    const search = document.getElementById(inputId).value.toLowerCase();
-    const rows = document.querySelectorAll(`#${tableId} tbody tr`);
-    rows.forEach(row => {
-        const name = row.querySelector("td:nth-child(2)")?.innerText.toLowerCase() || "";
-        row.style.display = name.includes(search) ? "" : "none";
-    });
-}
-</script>
 </head>
 <body>
-
 <h2>➕ Tambah Router AP</h2>
-<p><a href="index.php">⬅️ Kembali ke Dashboard</a></p>
+<a href="index.php">⬅️ Kembali ke Dashboard</a>
 
-<form method="post">
-    <label>Nama Router</label>
-    <input type="text" name="name" placeholder="Nama Router" required>
-
-    <label>Host/IP</label>
-    <input type="text" name="host" id="host" placeholder="IP Router" required>
-
-    <label>User</label>
-    <input type="text" name="user" value="admin">
-
-    <label>Password</label>
-    <input type="password" name="password" placeholder="Password Router">
-
-    <label>Port</label>
-    <input type="number" name="port" value="8728">
-
-    <button type="submit">💾 Simpan Router</button>
+<form method="post" action="">
+  <label>Nama Router</label>
+  <input type="text" name="name" placeholder="Nama Router" required>
+  <label>Host/IP</label>
+  <input type="text" name="host" id="host" placeholder="IP Router" required>
+  <label>User</label>
+  <input type="text" name="user" value="admin">
+  <label>Password</label>
+  <input type="password" name="password" placeholder="Password Router">
+  <label>Port</label>
+  <input type="number" name="port" value="8728">
+  <button type="submit">💾 Simpan Router</button>
 </form>
 
-<h3>🌐 Pilih IP dari PPPoE Server</h3>
+<h3>🔍 Cari IP dari PPPoE Server</h3>
+<input type="text" id="searchBox" placeholder="Ketik nama PPPoE..." onkeyup="liveSearch()" />
 
-<?php foreach ($pppoeRouters as $srv): ?>
-    <h4><?= htmlspecialchars($srv['name']) ?> (<?= htmlspecialchars($srv['host']) ?>)</h4>
-    <?php $list = getPPPActive($srv); ?>
+<div id="results">
+  <p><i>Ketik untuk mencari data...</i></p>
+</div>
 
-    <?php if (isset($list[0]['error'])): ?>
-        <p><i>Error koneksi: <?= htmlspecialchars($list[0]['error']) ?></i></p>
-    <?php elseif (empty($list)): ?>
-        <p><i>Tidak ada data aktif.</i></p>
-    <?php else: ?>
-        <div class="search-box">
-            🔍 <input type="text" id="search_<?= $srv['host'] ?>" class="search-input" placeholder="Cari berdasarkan nama PPPoE..." onkeyup="filterTable('search_<?= $srv['host'] ?>', 'table_<?= $srv['host'] ?>')">
-        </div>
-        <table class="table" id="table_<?= $srv['host'] ?>">
-            <thead>
-                <tr><th>No</th><th>Nama</th><th>IP</th><th>Uptime</th><th>Aksi</th></tr>
-            </thead>
-            <tbody>
-            <?php foreach ($list as $i => $d): ?>
-                <tr>
-                    <td><?= $i + 1 ?></td>
-                    <td><?= htmlspecialchars($d['name']) ?></td>
-                    <td><?= htmlspecialchars($d['address']) ?></td>
-                    <td><?= htmlspecialchars($d['uptime']) ?></td>
-                    <td><a href="#" class="btn-select" onclick="selectIP('<?= htmlspecialchars($d['address']) ?>')">Pilih</a></td>
-                </tr>
-            <?php endforeach; ?>
-            </tbody>
-        </table>
-    <?php endif; ?>
-<?php endforeach; ?>
+<script>
+function selectIP(ip) {
+  document.getElementById('host').value = ip;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
 
+let timer;
+function liveSearch() {
+  clearTimeout(timer);
+  const query = document.getElementById('searchBox').value.trim();
+  if (query.length < 2) {
+    document.getElementById('results').innerHTML = "<p><i>Ketik minimal 2 huruf untuk mencari...</i></p>";
+    return;
+  }
+  timer = setTimeout(() => {
+    fetch('search_pppoe.php?q=' + encodeURIComponent(query))
+      .then(res => res.text())
+      .then(html => {
+        document.getElementById('results').innerHTML = html;
+      })
+      .catch(err => {
+        document.getElementById('results').innerHTML = "<p>Error: " + err + "</p>";
+      });
+  }, 400);
+}
+</script>
 </body>
 </html>
