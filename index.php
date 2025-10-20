@@ -20,6 +20,16 @@ h2 { margin-bottom:5px; }
 .status-online{color:green;} .status-offline{color:red;}
 select, input[type=text]{padding:5px 8px;border-radius:6px;border:1px solid #ccc;}
 .search-box {margin-bottom:10px;}
+.signal {
+  font-weight:bold;
+  padding:4px 8px;
+  border-radius:6px;
+  display:inline-block;
+  color:#fff;
+}
+.signal.strong { background:#16a34a; }   /* hijau */
+.signal.medium { background:#facc15; color:#000; } /* kuning */
+.signal.weak { background:#dc2626; }     /* merah */
 </style>
 </head>
 <body>
@@ -50,6 +60,16 @@ const container = document.getElementById("data-container");
 const select = document.getElementById("intervalSelect");
 const searchInput = document.getElementById("searchInput");
 
+function getSignalColor(signalStr) {
+  if (!signalStr) return "";
+  // ambil nilai rata-rata jika format misal "-56/-60"
+  let sig = parseInt(signalStr.split('/')[0]);
+  if (isNaN(sig)) return "";
+  if (sig >= -60) return "strong";
+  if (sig >= -75) return "medium";
+  return "weak";
+}
+
 async function loadData() {
   try {
     const res = await fetch("get_data.php");
@@ -63,7 +83,6 @@ async function loadData() {
       } else if (router.clients.length === 0) {
         html += `<p>Tidak ada client terhubung</p>`;
       } else {
-        // filter client berdasarkan radio-name
         const filtered = filter
           ? router.clients.filter(c => (c["radio-name"]||"").toLowerCase().includes(filter))
           : router.clients;
@@ -77,11 +96,12 @@ async function loadData() {
               <th>TX Rate</th><th>RX Rate</th><th>Uptime</th>
             </tr>`;
           filtered.forEach(c => {
+            const signalClass = getSignalColor(c.signal);
             html += `<tr>
               <td>${c.interface || '-'}</td>
               <td>${c["mac-address"] || '-'}</td>
               <td>${c["radio-name"] || '-'}</td>
-              <td>${c.signal || '-'}</td>
+              <td><span class="signal ${signalClass}">${c.signal || '-'}</span></td>
               <td>${c["tx-ccq"] || '-'}</td>
               <td>${c["rx-ccq"] || '-'}</td>
               <td>${c["tx-rate"] || '-'}</td>
@@ -103,11 +123,11 @@ async function loadData() {
 function setRefresh(interval) {
   if (refreshTimer) clearInterval(refreshTimer);
   refreshTimer = setInterval(loadData, interval);
-  loadData(); // panggil pertama kali
+  loadData();
 }
 
 select.addEventListener("change", e => setRefresh(parseInt(e.target.value)));
-searchInput.addEventListener("input", loadData); // filter realtime
+searchInput.addEventListener("input", loadData);
 setRefresh(parseInt(select.value));
 </script>
 </body>
