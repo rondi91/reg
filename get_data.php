@@ -28,7 +28,8 @@ foreach ($routers as $r) {
         'tx-ccq'=>$d['tx-ccq'] ?? '',
         'rx-ccq'=>$d['rx-ccq'] ?? '',
         'tx-rate'=>$d['tx-rate'] ?? '',
-        'rx-rate'=>$d['rx-rate'] ?? ''
+        'rx-rate'=>$d['rx-rate'] ?? '',
+        'uptime'=>$d['uptime'] ?? ''
       ];
     }
   } catch (Exception $e) {

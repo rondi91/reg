@@ -74,7 +74,7 @@ async function loadData() {
             <tr>
               <th>Interface</th><th>MAC</th><th>Radio Name</th>
               <th>Signal</th><th>TX CCQ</th><th>RX CCQ</th>
-              <th>TX Rate</th><th>RX Rate</th>
+              <th>TX Rate</th><th>RX Rate</th><th>Uptime</th>
             </tr>`;
           filtered.forEach(c => {
             html += `<tr>
@@ -86,6 +86,7 @@ async function loadData() {
               <td>${c["rx-ccq"] || '-'}</td>
               <td>${c["tx-rate"] || '-'}</td>
               <td>${c["rx-rate"] || '-'}</td>
+              <td>${c["uptime"] || '-'}</td>
             </tr>`;
           });
           html += `</table>`;
@@ -102,7 +103,7 @@ async function loadData() {
 function setRefresh(interval) {
   if (refreshTimer) clearInterval(refreshTimer);
   refreshTimer = setInterval(loadData, interval);
-  loadData(); // panggil pertama
+  loadData(); // panggil pertama kali
 }
 
 select.addEventListener("change", e => setRefresh(parseInt(e.target.value)));
