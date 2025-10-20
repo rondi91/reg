@@ -10,3 +10,153 @@ git push -u origin main
 ==> inisialisasi <===
  git config --global user.email "rondie91@gmail.com"
  git config --global user.name "yanto"
+
+ LANGKAH 1 — Pastikan Git Terinstal
+ sudo apt update
+ sudo apt install git -y
+
+LANGKAH 2 — Konfigurasi Identitas
+git config --global user.name "Nama Kamu"
+git config --global user.email "emailkamu@example.com"
+
+Cek konfigurasi:
+git config --list
+
+LANGKAH 3 — Inisialisasi Git di Proyek
+cd /www/reg
+git init
+
+Lalu tambahkan semua file pertama kali:
+git add .
+git commit -m "Inisialisasi proyek Wireless Monitor"
+
+LANGKAH 4 — Menyimpan Perubahan Baru
+git add .
+git commit -m "Penambahan fitur sorting manual di tabel"
+
+LANGKAH 5 — Melihat Riwayat Belajar / Perubahan
+git log --oneline
+
+Atau versi detail:
+git log
+
+Untuk melihat perbedaan kode (belajar dari perubahan):
+git diff
+
+Atau antara dua versi:
+git diff HEAD~1 HEAD
+
+LANGKAH 6 — (Opsional) Upload ke GitHub
+git remote add origin https://github.com/username/nama-repo.git
+git branch -M main
+git push -u origin main
+
+git add .
+git commit -m "Update fitur baru"
+git push
+
+Tips Belajar dari Perubahan
+
+Setelah commit, jalankan git diff HEAD~1 untuk membandingkan versi sebelumnya.
+
+Jika mau coba eksperimen fitur baru, gunakan branch:
+git checkout -b fitur-sorting-baru
+
+Setelah puas, gabungkan ke main:
+git checkout main
+git merge fitur-sorting-baru
+
+Kalau error setelah update, bisa rollback:
+git checkout HEAD~1 -- index.php
+
+Kalau kamu mau, saya bisa bantu buatkan struktur Git workflow sederhana khusus untuk proyek kamu ini — misalnya branch:
+
+main → versi stabil
+
+dev → percobaan / belajar
+
+feature/* → fitur baru per modul (misal: feature-live-search, feature-sorting, dll)
+📂 /www/reg
+ ┣ 📄 index.php
+ ┣ 📄 get_data.php
+ ┣ 📄 routers.json
+ ┣ 📄 RouterOS.php
+ ┗ 🧠 Git Workflow:
+     ┣ main      → versi stabil (siap jalan di server)
+     ┣ dev       → percobaan fitur sebelum stabil
+     ┗ feature/* → fitur baru yang sedang kamu pelajari
+
+LANGKAH 1 — Inisialisasi Git di Proyek
+cd /www/reg
+git init
+Tambahkan semua file awal:
+git add .
+git commit -m "Inisialisasi proyek Wireless Monitor"
+
+LANGKAH 2 — Buat Branch main & dev
+git branch -M main
+git checkout -b dev
+
+LANGKAH 3 — Buat Fitur Baru (misalnya sorting manual)
+git checkout -b feature-sorting
+
+Edit file kamu di /www/reg/index.php, lalu setelah selesai:
+git add index.php
+git commit -m "Menambahkan fitur sorting manual di tabel wireless"
+
+Kalau sudah yakin berjalan dengan baik:
+git checkout dev
+git merge feature-sorting
+
+Lalu hapus branch fitur jika sudah digabung:
+git branch -d feature-sorting
+
+LANGKAH 4 — Uji di dev, lalu stabilkan ke main
+git checkout main
+git merge dev
+
+LANGKAH 5 — Lihat Riwayat & Belajar
+git log --oneline --graph --all
+
+Lihat perbedaan dua versi:
+git diff main dev
+
+Kalau kamu mau lihat perbedaan detail antar commit tertentu:
+git diff <commit_id_1> <commit_id_2>
+
+
+
+Inisialisasi Pertama Kali
+cd C:\laragon\www\reg
+gitflow init
+
+Ini akan otomatis membuat:
+
+branch main
+
+branch dev
+
+file learning-log.txt (berisi catatan pembelajaran otomatis)
+
+comit perubahangitflow commit
+gitflow commit
+Otomatis men-stage semua file dan commit dengan timestamp.
+Hasilnya juga disimpan ke learning-log.txt.
+Push ke GitHub
+gitflow push
+
+Buat Fitur Baru
+gitflow feature sorting
+
+cek status 
+gitflow status
+
+HASIL
+
+Setiap kali kamu bekerja dan menjalankan gitflow commit, Git akan:
+
+menyimpan semua perubahan
+
+mencatat waktu di learning-log.txt
+
+menjaga main & dev tetap bersih dan bisa kamu pelajari lewat git log
