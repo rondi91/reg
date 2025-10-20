@@ -1,0 +1,18 @@
+{
+  "pppoe_servers": [
+    {
+      "name": "PPPoE-Server-1",
+      "host": "192.168.255.21",
+      "user": "rondi",
+      "password": "21184662",
+      "port": 8728
+    },
+    {
+      "name": "PPPoE-Server-2",
+      "host": "192.168.255.26",
+      "user": "rondi",
+      "password": "21184662",
+      "port": 8728
+    }
+  ]
+}
