@@ -18,7 +18,8 @@ h2 { margin-bottom:5px; }
 .table th, .table td { padding:8px 10px; border-bottom:1px solid #e5e7eb; text-align:left; }
 .table th { background:#f1f5f9; }
 .status-online{color:green;} .status-offline{color:red;}
-select{padding:5px 8px;border-radius:6px;}
+select, input[type=text]{padding:5px 8px;border-radius:6px;border:1px solid #ccc;}
+.search-box {margin-bottom:10px;}
 </style>
 </head>
 <body>
@@ -35,7 +36,11 @@ select{padding:5px 8px;border-radius:6px;}
     <option value="10000">10 detik</option>
     <option value="30000">30 detik</option>
   </select>
+  &nbsp;|&nbsp;
+  Filter radio-name:
+  <input type="text" id="searchInput" placeholder="Ketik radio-name...">
 </div>
+
 <div id="data-container">Memuat data...</div>
 <?php endif; ?>
 
@@ -43,11 +48,13 @@ select{padding:5px 8px;border-radius:6px;}
 let refreshTimer = null;
 const container = document.getElementById("data-container");
 const select = document.getElementById("intervalSelect");
+const searchInput = document.getElementById("searchInput");
 
 async function loadData() {
   try {
     const res = await fetch("get_data.php");
     const data = await res.json();
+    const filter = searchInput.value.trim().toLowerCase();
     let html = "";
     data.forEach(router => {
       html += `<div class="card"><h3>${router.name}</h3>`;
@@ -56,23 +63,33 @@ async function loadData() {
       } else if (router.clients.length === 0) {
         html += `<p>Tidak ada client terhubung</p>`;
       } else {
-        html += `<table class="table">
-          <tr>
-            <th>Interface</th><th>MAC</th><th>Signal</th>
-            <th>TX CCQ</th><th>RX CCQ</th><th>TX Rate</th><th>RX Rate</th>
-          </tr>`;
-        router.clients.forEach(c => {
-          html += `<tr>
-            <td>${c.interface || '-'}</td>
-            <td>${c["mac-address"] || '-'}</td>
-            <td>${c.signal || '-'}</td>
-            <td>${c["tx-ccq"] || '-'}</td>
-            <td>${c["rx-ccq"] || '-'}</td>
-            <td>${c["tx-rate"] || '-'}</td>
-            <td>${c["rx-rate"] || '-'}</td>
-          </tr>`;
-        });
-        html += `</table>`;
+        // filter client berdasarkan radio-name
+        const filtered = filter
+          ? router.clients.filter(c => (c["radio-name"]||"").toLowerCase().includes(filter))
+          : router.clients;
+        if (filtered.length === 0) {
+          html += `<p><em>Tidak ada client cocok filter "${filter}"</em></p>`;
+        } else {
+          html += `<table class="table">
+            <tr>
+              <th>Interface</th><th>MAC</th><th>Radio Name</th>
+              <th>Signal</th><th>TX CCQ</th><th>RX CCQ</th>
+              <th>TX Rate</th><th>RX Rate</th>
+            </tr>`;
+          filtered.forEach(c => {
+            html += `<tr>
+              <td>${c.interface || '-'}</td>
+              <td>${c["mac-address"] || '-'}</td>
+              <td>${c["radio-name"] || '-'}</td>
+              <td>${c.signal || '-'}</td>
+              <td>${c["tx-ccq"] || '-'}</td>
+              <td>${c["rx-ccq"] || '-'}</td>
+              <td>${c["tx-rate"] || '-'}</td>
+              <td>${c["rx-rate"] || '-'}</td>
+            </tr>`;
+          });
+          html += `</table>`;
+        }
       }
       html += `</div>`;
     });
@@ -85,10 +102,11 @@ async function loadData() {
 function setRefresh(interval) {
   if (refreshTimer) clearInterval(refreshTimer);
   refreshTimer = setInterval(loadData, interval);
-  loadData(); // langsung panggil
+  loadData(); // panggil pertama
 }
 
 select.addEventListener("change", e => setRefresh(parseInt(e.target.value)));
+searchInput.addEventListener("input", loadData); // filter realtime
 setRefresh(parseInt(select.value));
 </script>
 </body>
