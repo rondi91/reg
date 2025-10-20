@@ -31,7 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // --- Ambil daftar IP aktif dari PPPoE servers ---
-function getPPPActiveIPs($router)
+function getPPPActive($router)
 {
     try {
         $client = new Client([
@@ -45,15 +45,18 @@ function getPPPActiveIPs($router)
         $query = new Query('/ppp/active/print');
         $data = $client->query($query)->read();
 
-        $ips = [];
+        $list = [];
         foreach ($data as $d) {
-            if (isset($d['address'])) {
-                $ips[] = $d['address'];
-            }
+            $list[] = [
+                'name' => $d['name'] ?? '-',
+                'address' => $d['address'] ?? '-',
+                'uptime' => $d['uptime'] ?? '-',
+                'service' => $d['service'] ?? '-'
+            ];
         }
-        return $ips;
+        return $list;
     } catch (Exception $e) {
-        return ['Error: ' . $e->getMessage()];
+        return [['error' => $e->getMessage()]];
     }
 }
 ?>
@@ -99,7 +102,7 @@ button:hover { background: #1e40af; }
     border-radius: 10px;
     overflow: hidden;
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    margin-top: 20px;
+    margin-top: 10px;
 }
 .table th, .table td {
     padding: 8px;
@@ -116,11 +119,29 @@ button:hover { background: #1e40af; }
     font-size: 13px;
 }
 .btn-select:hover { background: #15803d; }
+.search-box {
+    margin: 10px 0;
+}
+.search-input {
+    width: 250px;
+    padding: 6px 10px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+}
 </style>
 <script>
 function selectIP(ip) {
     document.getElementById('host').value = ip;
     window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function filterTable(inputId, tableId) {
+    const search = document.getElementById(inputId).value.toLowerCase();
+    const rows = document.querySelectorAll(`#${tableId} tbody tr`);
+    rows.forEach(row => {
+        const name = row.querySelector("td:nth-child(2)")?.innerText.toLowerCase() || "";
+        row.style.display = name.includes(search) ? "" : "none";
+    });
 }
 </script>
 </head>
@@ -152,19 +173,31 @@ function selectIP(ip) {
 
 <?php foreach ($pppoeRouters as $srv): ?>
     <h4><?= htmlspecialchars($srv['name']) ?> (<?= htmlspecialchars($srv['host']) ?>)</h4>
-    <?php $ips = getPPPActiveIPs($srv); ?>
-    <?php if (empty($ips)): ?>
-        <p><i>Tidak ada IP aktif atau gagal koneksi.</i></p>
+    <?php $list = getPPPActive($srv); ?>
+
+    <?php if (isset($list[0]['error'])): ?>
+        <p><i>Error koneksi: <?= htmlspecialchars($list[0]['error']) ?></i></p>
+    <?php elseif (empty($list)): ?>
+        <p><i>Tidak ada data aktif.</i></p>
     <?php else: ?>
-        <table class="table">
-            <tr><th>No</th><th>Alamat IP</th><th>Aksi</th></tr>
-            <?php foreach ($ips as $i => $ip): ?>
+        <div class="search-box">
+            🔍 <input type="text" id="search_<?= $srv['host'] ?>" class="search-input" placeholder="Cari berdasarkan nama PPPoE..." onkeyup="filterTable('search_<?= $srv['host'] ?>', 'table_<?= $srv['host'] ?>')">
+        </div>
+        <table class="table" id="table_<?= $srv['host'] ?>">
+            <thead>
+                <tr><th>No</th><th>Nama</th><th>IP</th><th>Uptime</th><th>Aksi</th></tr>
+            </thead>
+            <tbody>
+            <?php foreach ($list as $i => $d): ?>
                 <tr>
                     <td><?= $i + 1 ?></td>
-                    <td><?= htmlspecialchars($ip) ?></td>
-                    <td><a href="#" class="btn-select" onclick="selectIP('<?= htmlspecialchars($ip) ?>')">Pilih</a></td>
+                    <td><?= htmlspecialchars($d['name']) ?></td>
+                    <td><?= htmlspecialchars($d['address']) ?></td>
+                    <td><?= htmlspecialchars($d['uptime']) ?></td>
+                    <td><a href="#" class="btn-select" onclick="selectIP('<?= htmlspecialchars($d['address']) ?>')">Pilih</a></td>
                 </tr>
             <?php endforeach; ?>
+            </tbody>
         </table>
     <?php endif; ?>
 <?php endforeach; ?>
