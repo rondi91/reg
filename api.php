@@ -6,7 +6,13 @@ $routers = json_decode(file_get_contents('routers.json'), true);
 $result = [];
 
 foreach ($routers as $r) {
+    
     $api = new RouterOS();
+    $rows = $api->query('/interface/wireless/registration-table/print');
+var_dump($rows);
+exit;
+
+
     if ($api->connect($r['host'], $r['user'], $r['pass'], $r['port'])) {
         $rows = $api->query('/caps-man/registration-table/print', [
             '=.proplist=mac,interface,tx-ccq,rx-ccq,rx-signal,tx-signal,signal,signal-strength'

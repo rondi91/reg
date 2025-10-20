@@ -1,10 +1,10 @@
 [
   {
     "name": "Router Kantor",
-    "host": "192.168.10.1",
+    "host": "172.16.30.8",
     "port": 8728,
-    "user": "admin",
-    "pass": "password"
+    "user": "rondi",
+    "pass": "21184662"
   },
   {
     "name": "Router Rumah",
